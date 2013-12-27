@@ -9,8 +9,7 @@
      => (λ (pos) pos)]
     [(send ed find-up-sexp sp)
      => (λ (pos)
-          (define dest (send ed get-forward-sexp pos))
-          dest)]
+          (send ed get-forward-sexp pos))]
     [else #f]))
 
 (define (my-forward-sexp ed evt)
@@ -58,10 +57,10 @@
   (unless (null? dests)
     (send ed set-position (apply max dests))))
 
-(keybinding "m:left" my-backward-sexp)
-(keybinding "m:right" my-forward-sexp)
-(keybinding "c:m:left" my-backward-term)
-(keybinding "c:m:right" my-forward-term)
+(keybinding "c:m:b" my-backward-sexp)
+(keybinding "c:m:f" my-forward-sexp)
+(keybinding "m:left" my-backward-term)
+(keybinding "m:right" my-forward-term)
 (keybinding "c:m:d"
             (λ (ed evt)
               (send ed down-sexp
@@ -195,7 +194,7 @@
   (when end
     (define fw (send ed get-forward-sexp end))
     (send ed insert ")" fw)
-    (send ed delete (- end 1) end)))
+    (send ed delete end)))
 
 (define (find-slurp-backward ed pos)
   (call/ec
