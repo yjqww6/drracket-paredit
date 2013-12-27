@@ -160,10 +160,12 @@
 (define (convolute-sexp ed evt)
   (define sp (sexp-start ed))
   (let*-when ([r1 (send ed find-up-sexp sp)]
+              [fw (send ed get-forward-sexp r1)]
+              [paren (send ed get-text (- fw 1) fw)]
               [r2 (send ed find-up-sexp r1)])
     (let ([text (send ed get-text r1 sp)]
           [end (send ed get-forward-sexp r2)])
-      (send ed insert ")" end)
+      (send ed insert paren end)
       (kill-sexps-backward ed sp)
       (splice-sexp ed evt (+ r1 1))
       (send ed insert text r2))))
