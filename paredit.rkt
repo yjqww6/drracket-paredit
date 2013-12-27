@@ -2,7 +2,27 @@
 (require drracket/tool-lib)
 ;;;; my shortcuts
 
-;; Movement
+;;; utils
+(define-syntax let*-when
+  (syntax-rules ()
+    [(_ () body* ...) (begin body* ...)]
+    [(_ ([id form] bind* ...) body* ...)
+     (let ([id form])
+       (when id
+         (let*-when (bind* ...)
+           body* ...)))]))
+
+(define-syntax let*-when/false
+  (syntax-rules ()
+    [(_ (bind* ...) body* ...)
+     (begin
+       (define ret
+         (let*-when (bind* ...) body* ...))
+       (if (void? ret)
+           #f
+           ret))]))
+
+;;; Movement
 (define (get-my-forward-sexp ed sp)
   (cond
     [(send ed get-forward-sexp sp)
@@ -14,8 +34,7 @@
 
 (define (my-forward-sexp ed evt)
   (define sp (send ed get-start-position))
-  (define dest (get-my-forward-sexp ed sp))
-  (when dest
+  (let*-when ([dest (get-my-forward-sexp ed sp)])
     (send ed set-position dest)))
 
 (define (get-my-backward-sexp ed sp)
@@ -26,8 +45,7 @@
 
 (define (my-backward-sexp ed evt)
   (define sp (send ed get-start-position))
-  (define dest (get-my-backward-sexp ed sp))
-  (when dest
+  (let*-when ([dest (get-my-backward-sexp ed sp)])
     (send ed set-position dest)))
 
 (define (my-forward-term ed evt)
@@ -40,13 +58,11 @@
     (send ed set-position (apply min dests))))
 
 (define (find-down-sexp-backward ed pos)
-  (define bw (send ed get-backward-sexp pos))
-  (if (not bw)
-      #f
-      (let ([down (send ed find-down-sexp bw)])
-        (if (or (not down) (> down pos))
+  (let*-when/false ([bw (send ed get-backward-sexp pos)]
+                    [down (send ed find-down-sexp bw)])
+    (if (or (not down) (> down pos))
             #f
-            (last-sexp ed down)))))
+            (last-sexp ed down))))
 
 (define (my-backward-term ed evt)
   (define sp (send ed get-start-position))
@@ -79,15 +95,10 @@
 (define (splice-sexp ed evt [pos #f])
   (when (not pos)
     (set! pos (send ed get-start-position)))
-  (let ([begin-outer (send ed find-up-sexp pos)])
-    (if begin-outer
-        (let ([end-outer (send ed get-forward-sexp begin-outer)])
-          (cond
-            [end-outer
-             (send ed delete (- end-outer 1) end-outer)
-             (send ed delete begin-outer (+ begin-outer 1))]
-            [else (bell)]))
-        (bell))))
+  (let*-when ([begin-outer (send ed find-up-sexp pos)]
+              [end-outer (send ed get-forward-sexp begin-outer)])
+    (send ed delete (- end-outer 1) end-outer)
+    (send ed delete begin-outer (+ begin-outer 1))))
 
 (define (start-of-sexp ed pos)
   (define fw (send ed get-forward-sexp pos))
@@ -141,28 +152,21 @@
 (define (raise-sexp ed evt)
   (define sp (sexp-start ed))
   (when (not-toplevel? ed sp)
-    (define fw (send ed get-forward-sexp sp))
-    (when fw
+    (let*-when ([fw (send ed get-forward-sexp sp)])
       (kill-sexps-forward ed fw))
     (kill-sexps-backward ed sp)
     (splice-sexp ed evt)))
 
 (define (convolute-sexp ed evt)
   (define sp (sexp-start ed))
-  (cond 
-    [(send ed find-up-sexp sp) 
-     => (λ (r1)
-          (cond 
-            [(send ed find-up-sexp r1)
-             => (λ (r2)
-                  (define text (send ed get-text r1 sp))
-                  (let ([end (send ed get-forward-sexp r2)])
-                    (send ed insert ")" end)
-                    (kill-sexps-backward ed sp)
-                    (splice-sexp ed evt (+ r1 1))
-                    (send ed insert text r2)))]
-            [else (bell)]))]
-    [else (bell)]))
+  (let*-when ([r1 (send ed find-up-sexp sp)]
+              [r2 (send ed find-up-sexp r1)])
+    (let ([text (send ed get-text r1 sp)]
+          [end (send ed get-forward-sexp r2)])
+      (send ed insert ")" end)
+      (kill-sexps-backward ed sp)
+      (splice-sexp ed evt (+ r1 1))
+      (send ed insert text r2))))
 
 (key-binding "m:s" splice-sexp)
 (key-binding "m:(" wrap-round)
@@ -175,82 +179,60 @@
 ;;; only process reversible cases
 
 (define (find-slurp-forward ed pos)
-  (call/ec
-   (λ (break)
-     (define up (send ed find-up-sexp pos))
-     (when (not up)
-       (break #f))
-     (define end (send ed get-forward-sexp up))
-     (when (not end)
-       (break #f))
-     (define fw (send ed get-forward-sexp end))
-     (if fw
-         end
-         #f))))
+  (let*-when/false ([up (send ed find-up-sexp pos)]
+                    [end (send ed get-forward-sexp up)]
+                    [fw (send ed get-forward-sexp end)])
+    end))
 
 (define (slurp-forward ed evt)
   (define sp (send ed get-start-position))
-  (define end (find-slurp-forward ed sp))
-  (when end
-    (define fw (send ed get-forward-sexp end))
-    (send ed insert ")" fw)
+  (let*-when ([end (find-slurp-forward ed sp)]
+              [fw (send ed get-forward-sexp end)]
+              [paren (send ed get-text (- end 1) end)])
+    (send ed insert paren fw)
     (send ed delete end)))
 
 (define (find-slurp-backward ed pos)
-  (call/ec
-   (λ (break)
-     (define up (send ed find-up-sexp pos))
-     (when (not up)
-       (break #f))
-     (define bw (send ed get-backward-sexp up))
-     (if bw
-         up
-         #f))))
+  (let*-when/false ([up (send ed find-up-sexp pos)]
+                    [bw (send ed get-backward-sexp up)])
+    up))
 
 (define (slurp-backward ed evt)
   (define sp (send ed get-start-position))
-  (define start (find-slurp-backward ed sp))
-  (when start
-    (define bw (send ed get-backward-sexp start))
+  (let*-when ([start (find-slurp-backward ed sp)]
+              [bw (send ed get-backward-sexp start)]
+              [paren (send ed get-text start (+ start 1))])
     (send ed delete (+ start 1))
-    (send ed insert "(" bw)))
+    (send ed insert paren bw)))
 
 (key-binding "c:right" slurp-forward)
 (key-binding "c:m:left" slurp-backward)
 
 (define (barf-forward ed evt)
   (define sp (send ed get-start-position))
-  (define up (send ed find-up-sexp sp))
-  (when up
-    (define fw (send ed get-forward-sexp up))
-    (when fw
-      (define last (last-sexp ed sp))
-      (define bw (send ed get-backward-sexp last))
-      (when bw
-        (let ([bw1 (send ed get-backward-sexp bw)])
-          (when bw1
-            (cond [(send ed get-forward-sexp bw1)
-                   => (λ (x) (set! bw x))]
-                  [else (void)])))
-        (send ed delete fw)
-        (send ed insert ")" bw)
-        (send ed set-position sp)))))
+  (let*-when ([up (send ed find-up-sexp sp)]
+              [fw (send ed get-forward-sexp up)]
+              [paren (send ed get-text (- fw 1) fw)]
+              [last (last-sexp ed sp)]
+              [bw (send ed get-backward-sexp last)])
+    (let*-when ([bw1 (send ed get-backward-sexp bw)]
+                [x (send ed get-forward-sexp bw1)])
+      (set! bw x))
+    (send ed delete fw)
+    (send ed insert paren bw)
+    (send ed set-position sp)))
 
 (define (barf-backward ed evt)
   (define sp (send ed get-start-position))
-  (define up (send ed find-up-sexp sp))
-  (when up
-    (define down (send ed find-down-sexp up))
-    (when down
-      (define fw (send ed get-forward-sexp down))
-      (when fw
-        (define fw1 (send ed get-forward-sexp fw))
-        (when fw1
-          (cond [(send ed get-backward-sexp fw1)
-                 => (λ (x) (set! fw x))]
-                [else (void)]))
-        (send ed insert "(" fw)
-        (send ed delete (+ up 1))))))
+  (let*-when ([up (send ed find-up-sexp sp)]
+              [paren (send ed get-text up (+ up 1))]
+              [down (send ed find-down-sexp up)]
+              [fw (send ed get-forward-sexp down)])
+    (let*-when ([fw1 (send ed get-forward-sexp fw)]
+                [x (send ed get-backward-sexp fw1)])
+      (set! fw x))
+    (send ed insert paren fw)
+    (send ed delete (+ up 1))))
 
 (key-binding "c:left" barf-forward)
 (key-binding "c:m:right" barf-backward)
