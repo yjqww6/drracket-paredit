@@ -1,0 +1,20 @@
+Some useful shortcuts for DrRacket.
+Inspired by paredit
+
+Implemented:
+
+ "m:s" splice-sexp
+ "m:(" wrap-round
+ "m:up" splice-sexp-killing-backward
+ "m:down" splice-sexp-killing-forward
+ "m:r" raise-sexp
+ "m:?" convolute-sexp
+
+ "c:right" slurp-forward
+ "c:m:left" slurp-backward
+ "c:left" barf-forward
+ "c:m:right" barf-backward
+
+Usage
+
+  Open the 'Edit|Keybindings|Add user-defined-keybindings' dialog, select this file.
