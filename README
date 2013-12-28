@@ -15,6 +15,11 @@ Implemented:
  "c:left" barf-forward
  "c:m:right" barf-backward
 
-Usage
+Install:
+  git clone git://github.com/yjqww6/drracket-paredit.git
+  raco link drracket-paredit
+  raco setup drracket-paredit
 
-  Open the 'Edit|Keybindings|Add user-defined-keybindings' dialog, select this file.
+or manually:
+  1. Download the "paredit.rkt"
+  2. Open the 'Edit|Keybindings|Add user-defined-keybindings' dialog, select "paredit.rkt".
