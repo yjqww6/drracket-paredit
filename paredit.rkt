@@ -16,9 +16,7 @@
   (begin
     (define ret
       (let*-when (bind* ...) body* ...))
-    (if (void? ret)
-        #f
-        ret)))
+    (if (void? ret) #f ret)))
 
 (define-syntax define-shortcut
   (syntax-rules ()
