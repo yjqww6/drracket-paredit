@@ -61,8 +61,8 @@
   (let*-when/false ([bw (send ed get-backward-sexp pos)]
                     [down (send ed find-down-sexp bw)])
     (if (or (not down) (> down pos))
-            #f
-            (last-sexp ed down))))
+        #f
+        (last-sexp ed down))))
 
 (define (my-backward-term ed evt)
   (define sp (send ed get-start-position))
@@ -162,13 +162,13 @@
   (let*-when ([r1 (send ed find-up-sexp sp)]
               [fw (send ed get-forward-sexp r1)]
               [paren (send ed get-text (- fw 1) fw)]
-              [r2 (send ed find-up-sexp r1)])
-    (let ([text (send ed get-text r1 sp)]
-          [end (send ed get-forward-sexp r2)])
-      (send ed insert paren end)
-      (kill-sexps-backward ed sp)
-      (splice-sexp ed evt (+ r1 1))
-      (send ed insert text r2))))
+              [r2 (send ed find-up-sexp r1)]
+              [text (send ed get-text r1 sp)]
+              [end (send ed get-forward-sexp r2)])
+    (send ed insert paren end)
+    (kill-sexps-backward ed sp)
+    (splice-sexp ed evt (+ r1 1))
+    (send ed insert text r2)))
 
 (key-binding "m:s" splice-sexp)
 (key-binding "m:(" wrap-round)
@@ -180,28 +180,18 @@
 ;;;Barfage & Slurpage
 ;;; only process reversible cases
 
-(define (find-slurp-forward ed pos)
-  (let*-when/false ([up (send ed find-up-sexp pos)]
-                    [end (send ed get-forward-sexp up)]
-                    [fw (send ed get-forward-sexp end)])
-    end))
-
 (define (slurp-forward ed evt)
   (define sp (send ed get-start-position))
-  (let*-when ([end (find-slurp-forward ed sp)]
+  (let*-when ([up (send ed find-up-sexp sp)]
+              [end (send ed get-forward-sexp up)]
               [fw (send ed get-forward-sexp end)]
               [paren (send ed get-text (- end 1) end)])
     (send ed insert paren fw)
     (send ed delete end)))
 
-(define (find-slurp-backward ed pos)
-  (let*-when/false ([up (send ed find-up-sexp pos)]
-                    [bw (send ed get-backward-sexp up)])
-    up))
-
 (define (slurp-backward ed evt)
   (define sp (send ed get-start-position))
-  (let*-when ([start (find-slurp-backward ed sp)]
+  (let*-when ([start (send ed find-up-sexp sp)]
               [bw (send ed get-backward-sexp start)]
               [paren (send ed get-text start (+ start 1))])
     (send ed delete (+ start 1))
