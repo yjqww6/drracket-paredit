@@ -28,8 +28,7 @@
            (send ed begin-edit-sequence)
            (apply proc ed evt rest)
            (send ed end-edit-sequence)))
-       (for ([k (in-list (list key ...))])
-         (keybinding k name)))]
+       (keybinding key name) ...)]
     [(_ key name proc)
      (define-shortcut (key) name proc)]))
 
@@ -69,8 +68,7 @@
     (filter (λ (x) x)
             (list (send ed find-down-sexp sp)
                   (get-paredit-forward-sexp ed sp))))
-  (and (not (null? dests))
-       (apply min dests)))
+  (and (not (null? dests)) (apply min dests)))
 
 (define-shortcut ("m:right" "esc;right") (forward-atom ed evt)
   (let*-when ([dest (get-forward-atom ed (send ed get-start-position))])
