@@ -3,17 +3,28 @@ Inspired by paredit
 
 Implemented:
 
- "m:s" splice-sexp
- "m:(" wrap-round
- "m:up" splice-sexp-killing-backward
- "m:down" splice-sexp-killing-forward
- "m:r" raise-sexp
- "m:?" convolute-sexp
+  Movement:
+    ("c:m:f" "esc;c:f") paredit-forward-sexp
+    ("c:m:b" "esc;c:b") paredit-backward-sexp
 
- "c:right" slurp-forward
- "c:m:left" slurp-backward
- "c:left" barf-forward
- "c:m:right" barf-backward
+    ("c:m:d") down-sexp ;rebind to "c:m:d"
+
+    ("m:right" "esc;right") forward-atom ;this is not paredit shortcuts, but alternative for forward-word
+    ("m:left" "esc;left") backward-atom ;ditto
+  
+  Depth-Changing:
+    ("m:s" "esc;s") paredit-splice-sexp
+    ("m:(" "esc;(") paredit-wrap-round
+    ("m:up" "esc;up") paredit-splice-sexp-killing-backward
+    ("m:down" "esc;down") paredit-splice-sexp-killing-forward
+    ("m:r" "esc;r") paredit-raise-sexp
+    ("m:?" "esc;?") paredit-convolute-sexp
+
+  Slurpage & barfage
+    ("c:right" "c:)" "c:]") paredit-slurp-forward
+    ("c:m:left" "esc;c:left" "c:(" "c:[") paredit-slurp-backward
+    ("c:left" "c:}") paredit-barf-forward
+    ("c:m:right" "esc;c:right" "c:{") paredit-barf-backward
 
 Install:
   git clone git://github.com/yjqww6/drracket-paredit.git

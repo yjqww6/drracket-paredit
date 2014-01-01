@@ -1,8 +1,6 @@
 #lang s-exp framework/keybinding-lang
 (require drracket/tool-lib)
-;;;; my shortcuts
 
-;;; utils
 (define-syntax let*-when
   (syntax-rules ()
     [(_ () body* ...) (begin body* ...)]
@@ -65,7 +63,6 @@
   (send ed down-sexp
         (send ed get-start-position)))
 
-;;; Following two are not paredit shortcuts. They are alternatives for forward-word
 (define (get-forward-atom ed pos)
   (define sp (send ed get-start-position))
   (define dests 
