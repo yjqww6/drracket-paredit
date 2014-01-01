@@ -86,7 +86,7 @@
   (unless (null? dests)
     (send ed set-position (apply max dests))))
 
-(define-shortcut "c:m:d" (paredit-down-sexp ed evt)
+(define-shortcut ("c:m:d") (paredit-down-sexp ed evt)
   (send ed down-sexp
         (send ed get-start-position)))
 
@@ -173,7 +173,7 @@
 ;;;Barfage & Slurpage
 ;;; only process reversible cases
 
-(define-shortcut ("c:right" "c:s:0") (paredit-slurp-forward ed evt)
+(define-shortcut ("c:right" "c:s:0" "c:]") (paredit-slurp-forward ed evt)
   (define sp (send ed get-start-position))
   (let*-when ([up (send ed find-up-sexp sp)]
               [end (send ed get-forward-sexp up)]
@@ -182,7 +182,7 @@
     (send ed insert paren fw)
     (send ed delete end)))
 
-(define-shortcut ("c:m:left" "esc;c:left" "c:s:9") (paredit-slurp-backward ed evt)
+(define-shortcut ("c:m:left" "esc;c:left" "c:s:9" "c:[") (paredit-slurp-backward ed evt)
   (define sp (send ed get-start-position))
   (let*-when ([start (send ed find-up-sexp sp)]
               [bw (send ed get-backward-sexp start)]
