@@ -25,10 +25,10 @@
        (λ args body* ...))]
     [(_ (key ...) name proc)
      (begin
-       (define (name ed evt)
+       (define (name ed evt . rest)
          (when (is-a? ed racket:text<%>)
            (send ed begin-edit-sequence)
-           (proc ed evt)
+           (apply proc ed evt rest)
            (send ed end-edit-sequence)))
        (for ([k (in-list (list key ...))])
          (keybinding k name)))]
@@ -36,7 +36,7 @@
      (define-shortcut (key) name proc)]))
 
 ;;; Movement
-(define (get-my-forward-sexp ed sp)
+(define (get-paredit-forward-sexp ed sp)
   (cond
     [(send ed get-forward-sexp sp)
      => (λ (pos) pos)]
@@ -47,10 +47,10 @@
 
 (define-shortcut ("c:m:f" "esc;c:f") (paredit-forward-sexp ed evt)
   (define sp (send ed get-start-position))
-  (let*-when ([dest (get-my-forward-sexp ed sp)])
+  (let*-when ([dest (get-paredit-forward-sexp ed sp)])
     (send ed set-position dest)))
 
-(define (get-my-backward-sexp ed sp)
+(define (get-paredit-backward-sexp ed sp)
   (cond
     [(send ed get-backward-sexp sp)
      => (λ (pos) pos)]
@@ -58,17 +58,26 @@
 
 (define-shortcut ("c:m:b" "esc;c:b") (paredit-backward-sexp ed evt)
   (define sp (send ed get-start-position))
-  (let*-when ([dest (get-my-backward-sexp ed sp)])
+  (let*-when ([dest (get-paredit-backward-sexp ed sp)])
     (send ed set-position dest)))
 
-(define-shortcut ("m:right" "esc;right") (paredit-forward-term ed evt)
+(define-shortcut ("c:m:d") (paredit-down-sexp ed evt)
+  (send ed down-sexp
+        (send ed get-start-position)))
+
+;;; Following two are not paredit shortcuts. They are alternatives for forward-word
+(define (get-forward-atom ed pos)
   (define sp (send ed get-start-position))
   (define dests 
     (filter (λ (x) x)
             (list (send ed find-down-sexp sp)
-                  (get-my-forward-sexp ed sp))))
-  (unless (null? dests)
-    (send ed set-position (apply min dests))))
+                  (get-paredit-forward-sexp ed sp))))
+  (and (not (null? dests))
+       (apply min dests)))
+
+(define-shortcut ("m:right" "esc;right") (forward-atom ed evt)
+  (let*-when ([dest (get-forward-atom ed (send ed get-start-position))])
+    (send ed set-position dest)))
 
 (define (find-down-sexp-backward ed pos)
   (let*-when/false ([bw (send ed get-backward-sexp pos)]
@@ -77,27 +86,28 @@
         #f
         (last-sexp ed down))))
 
-(define-shortcut ("m:left" "esc;left") (paredit-backward-term ed evt)
+(define (get-backward-atom ed pos)
   (define sp (send ed get-start-position))
   (define dests 
     (filter (λ (x) x)
             (list (find-down-sexp-backward ed sp)
-                  (get-my-backward-sexp ed sp))))
-  (unless (null? dests)
-    (send ed set-position (apply max dests))))
+                  (get-paredit-backward-sexp ed sp))))
+  (and (not (null? dests)) (apply max dests)))
 
-(define-shortcut ("c:m:d") (paredit-down-sexp ed evt)
-  (send ed down-sexp
-        (send ed get-start-position)))
+(define-shortcut ("m:left" "esc;left") (backward-atom ed evt)
+  (let*-when ([dest (get-backward-atom ed (send ed get-start-position))])
+    (send ed set-position dest)))
 
 ;;; Depth-Changing
-(define-shortcut ("m:s" "esc;s") (paredit-splice-sexp ed evt [pos #f])
+(define-shortcut ("m:s" "esc;s") (paredit-splice-sexp ed evt [pos #f] [reindent #t])
   (when (not pos)
     (set! pos (send ed get-start-position)))
   (let*-when ([begin-outer (send ed find-up-sexp pos)]
               [end-outer (send ed get-forward-sexp begin-outer)])
     (send ed delete (- end-outer 1) end-outer)
-    (send ed delete begin-outer (+ begin-outer 1))))
+    (send ed delete begin-outer (+ begin-outer 1))
+    (when reindent
+      (send ed tabify-selection begin-outer end-outer))))
 
 (define (start-of-sexp ed pos)
   (define fw (send ed get-forward-sexp pos))
@@ -166,8 +176,9 @@
               [end (send ed get-forward-sexp r2)])
     (send ed insert paren end)
     (kill-sexps-backward ed sp)
-    (paredit-splice-sexp ed evt (+ r1 1))
-    (send ed insert text r2)))
+    (paredit-splice-sexp ed evt (+ r1 1) #f)
+    (send ed insert text r2)
+    (send ed tabify-selection r2 end)))
 
 
 ;;;Barfage & Slurpage
@@ -180,7 +191,8 @@
               [fw (send ed get-forward-sexp end)]
               [paren (send ed get-text (- end 1) end)])
     (send ed insert paren fw)
-    (send ed delete end)))
+    (send ed delete end)
+    (send ed tabify-selection fw end)))
 
 (define-shortcut ("c:m:left" "esc;c:left" "c:s:9" "c:[") (paredit-slurp-backward ed evt)
   (define sp (send ed get-start-position))
@@ -188,7 +200,8 @@
               [bw (send ed get-backward-sexp start)]
               [paren (send ed get-text start (+ start 1))])
     (send ed delete (+ start 1))
-    (send ed insert paren bw)))
+    (send ed insert paren bw)
+    (send ed tabify-selection bw start)))
 
 (define-shortcut ("c:left" "c:}") (paredit-barf-forward ed evt)
   (define sp (send ed get-start-position))
@@ -202,7 +215,8 @@
       (set! bw x))
     (send ed delete fw)
     (send ed insert paren bw)
-    (send ed set-position sp)))
+    (send ed set-position sp)
+    (send ed tabify-selection bw fw)))
 
 (define-shortcut ("c:m:right" "esc;c:right" "c:{") (paredit-barf-backward ed evt)
   (define sp (send ed get-start-position))
@@ -214,4 +228,5 @@
                 [x (send ed get-backward-sexp fw1)])
       (set! fw x))
     (send ed insert paren fw)
-    (send ed delete (+ up 1))))
+    (send ed delete (+ up 1))
+    (send ed tabify-selection up fw)))
