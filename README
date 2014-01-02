@@ -4,27 +4,38 @@ Inspired by paredit
 Implemented:
 
   Movement:
-    ("c:m:f" "esc;c:f") paredit-forward-sexp
-    ("c:m:b" "esc;c:b") paredit-backward-sexp
+    ("c:m:f") paredit-forward-sexp
+    ("c:m:b") paredit-backward-sexp
 
     ("c:m:d") down-sexp ;rebind to "c:m:d"
 
-    ("m:right" "esc;right") forward-atom ;this is not paredit shortcuts, but alternative for forward-word
-    ("m:left" "esc;left") backward-atom ;ditto
-  
+    ("m:right") forward-atom ;this is not paredit shortcuts, but alternative for forward-word
+    ("m:left") backward-atom ;ditto
+
   Depth-Changing:
-    ("m:s" "esc;s") paredit-splice-sexp
-    ("m:(" "esc;(") paredit-wrap-round
-    ("m:up" "esc;up") paredit-splice-sexp-killing-backward
-    ("m:down" "esc;down") paredit-splice-sexp-killing-forward
-    ("m:r" "esc;r") paredit-raise-sexp
-    ("m:?" "esc;?") paredit-convolute-sexp
+    ("m:s") paredit-splice-sexp
+    ("m:(") paredit-wrap-round
+    ("m:up") paredit-splice-sexp-killing-backward
+    ("m:down") paredit-splice-sexp-killing-forward
+    ("m:r") paredit-raise-sexp
+    ("m:?") paredit-convolute-sexp
 
   Slurpage & barfage
     ("c:right" "c:)" "c:]") paredit-slurp-forward
-    ("c:m:left" "esc;c:left" "c:(" "c:[") paredit-slurp-backward
+    ("c:m:left" "c:(" "c:[") paredit-slurp-backward
     ("c:left" "c:}") paredit-barf-forward
-    ("c:m:right" "esc;c:right" "c:{") paredit-barf-backward
+    ("c:m:right" "c:{") paredit-barf-backward
+
+Note:
+
+  All the key bindings involving meta key ("m:") can also be accessed
+  using the Escape key, by pressing and releasing it before proceeding
+  with the remaining keys, just like in Emacs. This is equivalent to
+  replacing "m:" with prepended "esc;".
+
+  You can see the up-to-date list of all the key bindings applied on
+  your platform, by selecting from DrRacket's menu Edit, Keybindings,
+  Show Active Keybindings, and filtering the list with "paredit."
 
 Install:
   git clone git://github.com/yjqww6/drracket-paredit.git
