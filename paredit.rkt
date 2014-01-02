@@ -58,7 +58,7 @@
   (let*-when ([dest (get-paredit-backward-sexp ed sp)])
     (send ed set-position dest)))
 
-(define-shortcut ("c:m:d") (paredit-down-sexp ed evt)
+(define-shortcut ("c:m:d" "esc;c:d") (paredit-down-sexp ed evt)
   (send ed down-sexp
         (send ed get-start-position)))
 
