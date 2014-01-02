@@ -46,9 +46,9 @@
      #'(define-shortcut key name
          (λ args body* ...))]
     [(_ (key ...) name proc)
-     (syntax-protect #`(define-shortcut-internal
-                         (#,@(add-esc-key-bindings #'(key ...)))
-                         name proc))]
+     #`(define-shortcut-internal
+         (#,@(add-esc-key-bindings #'(key ...)))
+         name proc)]
     [(_ key name proc)
      #'(define-shortcut (key) name proc)]))
 
