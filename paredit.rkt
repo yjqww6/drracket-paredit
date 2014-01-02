@@ -1,5 +1,6 @@
 #lang s-exp framework/keybinding-lang
 (require drracket/tool-lib)
+(require (for-syntax racket/set))
 
 (define-syntax let*-when
   (syntax-rules ()
@@ -16,21 +17,40 @@
       (let*-when (bind* ...) body* ...))
     (if (void? ret) #f ret)))
 
-(define-syntax define-shortcut
-  (syntax-rules ()
+;; The raw version of define-shortcut that does not perform any
+;; key processing or body wrapping.
+(define-syntax-rule (define-shortcut-internal (key ...) name proc)
+  (begin
+    (define (name ed evt . rest)
+      (when (is-a? ed racket:text<%>)
+        (send ed begin-edit-sequence)
+        (apply proc ed evt rest)
+        (send ed end-edit-sequence)))
+    (keybinding key name) ...))
+
+(define-syntax (define-shortcut stx)
+  ;; Add esc; equivalent key bindings for all the meta bindings.
+  (define (add-esc-key-bindings s-keys)
+    (define keys (syntax->datum s-keys))
+    (define esc-variants
+      (for/list ([k (in-list keys)]
+                 #:when (regexp-match? #rx"m:" k))
+        (string-append "esc;" (regexp-replace* #rx"m:" k ""))))
+    ;; Use set-union to combine all key bindings, so that duplicates are
+    ;; removed. This means that if we add some esc; key bindings manually,
+    ;; for example by accident, it will not be duplicated, affecting display
+    ;; of key bindings in DrRacket.
+    (set-union esc-variants keys))
+  (syntax-case stx ()
     [(_ key (name . args) body* ...)
-     (define-shortcut key name
-       (λ args body* ...))]
+     #'(define-shortcut key name
+         (λ args body* ...))]
     [(_ (key ...) name proc)
-     (begin
-       (define (name ed evt . rest)
-         (when (is-a? ed racket:text<%>)
-           (send ed begin-edit-sequence)
-           (apply proc ed evt rest)
-           (send ed end-edit-sequence)))
-       (keybinding key name) ...)]
+     (syntax-protect #`(define-shortcut-internal
+                         (#,@(add-esc-key-bindings #'(key ...)))
+                         name proc))]
     [(_ key name proc)
-     (define-shortcut (key) name proc)]))
+     #'(define-shortcut (key) name proc)]))
 
 ;;; Movement
 (define (get-paredit-forward-sexp ed sp)
@@ -42,7 +62,7 @@
           (send ed get-forward-sexp pos))]
     [else #f]))
 
-(define-shortcut ("c:m:f" "esc;c:f") (paredit-forward-sexp ed evt)
+(define-shortcut ("c:m:f") (paredit-forward-sexp ed evt)
   (define sp (send ed get-start-position))
   (let*-when ([dest (get-paredit-forward-sexp ed sp)])
     (send ed set-position dest)))
@@ -53,7 +73,7 @@
      => (λ (pos) pos)]
     [else (send ed find-up-sexp sp)]))
 
-(define-shortcut ("c:m:b" "esc;c:b") (paredit-backward-sexp ed evt)
+(define-shortcut ("c:m:b") (paredit-backward-sexp ed evt)
   (define sp (send ed get-start-position))
   (let*-when ([dest (get-paredit-backward-sexp ed sp)])
     (send ed set-position dest)))
@@ -70,7 +90,7 @@
                   (get-paredit-forward-sexp ed sp))))
   (and (not (null? dests)) (apply min dests)))
 
-(define-shortcut ("m:right" "esc;right") (forward-atom ed evt)
+(define-shortcut ("m:right") (forward-atom ed evt)
   (let*-when ([dest (get-forward-atom ed (send ed get-start-position))])
     (send ed set-position dest)))
 
@@ -89,12 +109,12 @@
                   (get-paredit-backward-sexp ed sp))))
   (and (not (null? dests)) (apply max dests)))
 
-(define-shortcut ("m:left" "esc;left") (backward-atom ed evt)
+(define-shortcut ("m:left") (backward-atom ed evt)
   (let*-when ([dest (get-backward-atom ed (send ed get-start-position))])
     (send ed set-position dest)))
 
 ;;; Depth-Changing
-(define-shortcut ("m:s" "esc;s") (paredit-splice-sexp ed evt [pos #f] [reindent #t])
+(define-shortcut ("m:s") (paredit-splice-sexp ed evt [pos #f] [reindent #t])
   (when (not pos)
     (set! pos (send ed get-start-position)))
   (let*-when ([begin-outer (send ed find-up-sexp pos)]
@@ -115,7 +135,7 @@
 (define (sexp-start ed)
   (start-of-sexp ed (send ed get-start-position)))
 
-(define-shortcut ("m:(" "esc;(") (paredit-wrap-round ed evt)
+(define-shortcut ("m:(") (paredit-wrap-round ed evt)
   (send ed insert "(")
   (send ed forward-sexp (send ed get-start-position))
   (send ed insert ")"))
@@ -141,19 +161,19 @@
 (define (not-toplevel? ed pos)
   (send ed find-up-sexp pos))
 
-(define-shortcut ("m:up" "esc;up") (paredit-splice-sexp-killing-backward ed evt)
+(define-shortcut ("m:up") (paredit-splice-sexp-killing-backward ed evt)
   (define sp (sexp-start ed))
   (when (not-toplevel? ed sp)
     (kill-sexps-backward ed sp)
     (paredit-splice-sexp ed evt)))
 
-(define-shortcut ("m:down" "esc;down") (paredit-splice-sexp-killing-forward ed evt)
+(define-shortcut ("m:down") (paredit-splice-sexp-killing-forward ed evt)
   (define sp (sexp-start ed))
   (when (not-toplevel? ed sp)
     (kill-sexps-forward ed sp)
     (paredit-splice-sexp ed evt)))
 
-(define-shortcut ("m:r" "esc;r") (paredit-raise-sexp ed evt)
+(define-shortcut ("m:r") (paredit-raise-sexp ed evt)
   (define sp (sexp-start ed))
   (when (not-toplevel? ed sp)
     (let*-when ([fw (send ed get-forward-sexp sp)])
@@ -161,7 +181,7 @@
     (kill-sexps-backward ed sp)
     (paredit-splice-sexp ed evt)))
 
-(define-shortcut ("m:?" "esc;?") (paredit-convolute-sexp ed evt)
+(define-shortcut ("m:?") (paredit-convolute-sexp ed evt)
   (define sp (sexp-start ed))
   (let*-when ([r1 (send ed find-up-sexp sp)]
               [fw (send ed get-forward-sexp r1)]
@@ -189,7 +209,7 @@
     (send ed delete end)
     (send ed tabify-selection fw end)))
 
-(define-shortcut ("c:m:left" "esc;c:left" "c:s:9" "c:[") (paredit-slurp-backward ed evt)
+(define-shortcut ("c:m:left" "c:s:9" "c:[") (paredit-slurp-backward ed evt)
   (define sp (send ed get-start-position))
   (let*-when ([start (send ed find-up-sexp sp)]
               [bw (send ed get-backward-sexp start)]
@@ -213,7 +233,7 @@
     (send ed set-position sp)
     (send ed tabify-selection bw fw)))
 
-(define-shortcut ("c:m:right" "esc;c:right" "c:{") (paredit-barf-backward ed evt)
+(define-shortcut ("c:m:right" "c:{") (paredit-barf-backward ed evt)
   (define sp (send ed get-start-position))
   (let*-when ([up (send ed find-up-sexp sp)]
               [paren (send ed get-text up (+ up 1))]
