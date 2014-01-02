@@ -17,6 +17,8 @@
       (let*-when (bind* ...) body* ...))
     (if (void? ret) #f ret)))
 
+;; The raw version of define-shortcut that does not perform any
+;; key processing or body wrapping.
 (define-syntax-rule (define-shortcut-internal (key ...) name proc)
   (begin
     (define (name ed evt . rest)
@@ -27,12 +29,17 @@
     (keybinding key name) ...))
 
 (define-syntax (define-shortcut stx)
+  ;; Add esc; equivalent key bindings for all the meta bindings.
   (define (add-esc-key-bindings s-keys)
     (define keys (syntax->datum s-keys))
     (define esc-variants
       (for/list ([k (in-list keys)]
                  #:when (regexp-match? #rx"m:" k))
         (string-append "esc;" (regexp-replace* #rx"m:" k ""))))
+    ;; Use set-union to combine all key bindings, so that duplicates are
+    ;; removed. This means that if we add some esc; key bindings manually,
+    ;; for example by accident, it will not be duplicated, affecting display
+    ;; of key bindings in DrRacket.
     (set-union esc-variants keys))
   (syntax-case stx ()
     [(_ key (name . args) body* ...)
