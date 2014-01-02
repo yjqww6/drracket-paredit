@@ -1,6 +1,6 @@
 #lang s-exp framework/keybinding-lang
 (require drracket/tool-lib)
-(require (for-syntax racket/set))
+(require (for-syntax racket/list))
 
 (define-syntax let*-when
   (syntax-rules ()
@@ -36,11 +36,7 @@
       (for/list ([k (in-list keys)]
                  #:when (regexp-match? #rx"m:" k))
         (string-append "esc;" (regexp-replace* #rx"m:" k ""))))
-    ;; Use set-union to combine all key bindings, so that duplicates are
-    ;; removed. This means that if we add some esc; key bindings manually,
-    ;; for example by accident, it will not be duplicated, affecting display
-    ;; of key bindings in DrRacket.
-    (set-union esc-variants keys))
+    (remove-duplicates (append esc-variants keys)))
   (syntax-case stx ()
     [(_ key (name . args) body* ...)
      #'(define-shortcut key name
