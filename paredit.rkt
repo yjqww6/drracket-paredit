@@ -192,7 +192,7 @@
              [paren (send ed get-text (- end 1) end)])
     (send ed insert paren fw)
     (send ed delete end)
-    (send ed tabify-selection fw end)))
+    (send ed tabify-selection up fw)))
 
 (define-shortcut ("c:m:left" "c:s:9" "c:[") (paredit-slurp-backward ed evt)
   (define sp (send ed get-start-position))
@@ -216,7 +216,7 @@
     (send ed delete fw)
     (send ed insert paren bw)
     (send ed set-position sp)
-    (send ed tabify-selection bw fw)))
+    (send ed tabify-selection up fw)))
 
 (define-shortcut ("c:m:right" "c:{") (paredit-barf-backward ed evt)
   (define sp (send ed get-start-position))
