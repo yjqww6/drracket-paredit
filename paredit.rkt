@@ -184,9 +184,16 @@
 ;;;Barfage & Slurpage
 ;;; only process reversible cases
 
+(define (find-up-sexp-slurp-forward ed sp)
+  (let loop ([sp (send ed find-up-sexp sp)])
+    (cond [(not sp) #f]
+          [(and-let* ([fw1 (send ed get-forward-sexp sp)])
+             (send ed get-forward-sexp fw1)) sp]
+          [else (loop (send ed find-up-sexp sp))])))
+
 (define-shortcut ("c:right" "c:s:0" "c:]") (paredit-slurp-forward ed evt)
   (define sp (send ed get-start-position))
-  (and-let* ([up (send ed find-up-sexp sp)]
+  (and-let* ([up (find-up-sexp-slurp-forward ed sp)]
              [end (send ed get-forward-sexp up)]
              [fw (send ed get-forward-sexp end)]
              [paren (send ed get-text (- end 1) end)])
@@ -194,9 +201,15 @@
     (send ed delete end)
     (send ed tabify-selection up fw)))
 
+(define (find-up-sexp-slurp-backward ed sp)
+  (let loop ([sp (send ed find-up-sexp sp)])
+    (cond [(not sp) #f]
+          [(send ed get-backward-sexp sp) sp]
+          [else (loop (send ed find-up-sexp sp))])))
+
 (define-shortcut ("c:m:left" "c:s:9" "c:[") (paredit-slurp-backward ed evt)
   (define sp (send ed get-start-position))
-  (and-let* ([start (send ed find-up-sexp sp)]
+  (and-let* ([start (find-up-sexp-slurp-backward ed sp)]
              [bw (send ed get-backward-sexp start)]
              [paren (send ed get-text start (+ start 1))])
     (send ed delete (+ start 1))
