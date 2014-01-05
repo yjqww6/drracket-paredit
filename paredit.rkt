@@ -182,7 +182,6 @@
 
 
 ;;;Barfage & Slurpage
-;;; only process reversible cases
 
 (define (find-up-sexp-slurp-forward ed sp)
   (let loop ([sp (send ed find-up-sexp sp)])
