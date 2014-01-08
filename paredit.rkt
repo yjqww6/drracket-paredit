@@ -122,8 +122,10 @@
 
 (define-shortcut ("m:(") (paredit-wrap-round ed evt)
   (send ed insert "(")
-  (send ed forward-sexp (send ed get-start-position))
-  (send ed insert ")"))
+  (let ([pos (send ed get-start-position)])
+    (send ed forward-sexp pos)
+    (send ed insert ")")
+    (send ed set-position pos)))
 
 (define (first-sexp ed sp)
   (let loop ([pos sp] [prev sp])
