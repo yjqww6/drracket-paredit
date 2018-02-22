@@ -38,9 +38,7 @@ Note:
   Show Active Keybindings, and filtering the list with "paredit."
 
 Install:
-  git clone git://github.com/yjqww6/drracket-paredit.git
-  raco link drracket-paredit
-  raco setup drracket-paredit
+  raco pkg install drracket-paredit
 
 or manually:
   1. Download the "paredit.rkt"
