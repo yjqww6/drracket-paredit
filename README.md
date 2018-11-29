@@ -1,36 +1,33 @@
-Some useful shortcuts for DrRacket.
+# Some useful shortcuts for DrRacket.
+
 Inspired by paredit
 
-Implemented:
+## Implemented:
 
 Movement:
-
-`("c:m:f")` paredit-forward-sexp
-`("c:m:b")` paredit-backward-sexp
-    
-`("c:m:d")` down-sexp ;rebind to `"c:m:d"`
-    
-`("m:right")` forward-atom ;this is not paredit shortcuts, but alternative for forward-word
-`("m:left")` backward-atom ;ditto
-
+* `("c:m:f")` paredit-forward-sexp
+* `("c:m:b")` paredit-backward-sexp
+* `("c:m:d")` down-sexp ;rebind to `"c:m:d"`
+* `("m:right")` forward-atom ;this is not paredit shortcuts, but alternative for forward-word
+* `("m:left")` backward-atom ;ditto
 
 
 
 Depth-Changing:
-`("m:s")` paredit-splice-sexp
-`("m:(")` paredit-wrap-round
-`("m:up")` paredit-splice-sexp-killing-backward
-`("m:down")` paredit-splice-sexp-killing-forward
-`("m:r")` paredit-raise-sexp
-`("m:?")` paredit-convolute-sexp
+* `("m:s")` paredit-splice-sexp
+* `("m:(")` paredit-wrap-round
+* `("m:up")` paredit-splice-sexp-killing-backward
+* `("m:down")` paredit-splice-sexp-killing-forward
+* `("m:r")` paredit-raise-sexp
+* `("m:?")` paredit-convolute-sexp
 
 Slurpage & barfage
-`("c:right" "c:)" "c:]")` paredit-slurp-forward
-`("c:m:left" "c:(" "c:[")` paredit-slurp-backward
-`("c:left" "c:}")` paredit-barf-forward
-`("c:m:right" "c:{")` paredit-barf-backward
+* `("c:right" "c:)" "c:]")` paredit-slurp-forward
+* `("c:m:left" "c:(" "c:[")` paredit-slurp-backward
+* `("c:left" "c:}")` paredit-barf-forward
+* `("c:m:right" "c:{")` paredit-barf-backward
 
-Note:
+## Note:
 
   All the key bindings involving meta key `"m:"` can also be accessed
   using the Escape key, by pressing and releasing it before proceeding
@@ -43,8 +40,10 @@ Note:
   your platform, by selecting from DrRacket's menu Edit, Keybindings,
   Show Active Keybindings, and filtering the list with "paredit."
 
-Install:
+## Install:
+```shell
   raco pkg install drracket-paredit
+```
 
 or manually:
   1. Download the "paredit.rkt"
