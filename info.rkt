@@ -10,3 +10,5 @@
 (define blurb '("some paredit shortcuts for DrRacket"))
 (define primary-file "paredit.rkt")
 (define deps '("base" "drracket" "drracket-plugin-lib" "gui-lib" "srfi-lib"))
+
+(define test-omit-paths 'all)
